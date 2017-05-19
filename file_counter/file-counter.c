@@ -73,10 +73,7 @@ int main(){
     perror("semget error.");
     exit(1);
   }
-  if((semctl(sid,0,SETVAL,1))==EOF){
-		printf("%s\n","ERR");
-		exit(0);
-	}
+  semctl(sid, 0, SETVAL, 1);
   for (i=0; i<NUMPROCS; i++) {
     lock(sid);
     if ((pid=fork())== -1) {
@@ -92,4 +89,5 @@ int main(){
   for (i=0; i<NUMPROCS; i++) {
     wait(&status);
   }
+  semctl(sid, 0, IPC_RMID);
 }
