@@ -5,7 +5,19 @@
 #define TIMEOUT 10
 
 void myalarm(int sec) {
-  alarm(sec);
+
+  if ((pid=fork())== -1) {
+    perror("fork failed.");
+    exit(1);
+  }
+  if (pid == 0) { /* Child process */
+    sleep(sec);
+    if (kill(ppid,SIGALRM) == -1) {
+      perror("kill failed.");
+      exit(1);
+    }
+    exit(0);
+  }
 }
 
 void timeout()
@@ -24,7 +36,7 @@ int main()
   }
 
   myalarm(TIMEOUT);
-  
+
   while (fgets(buf, BUFSIZE, stdin) != NULL) {
     printf("echo: %s",buf);
     myalarm(TIMEOUT);
