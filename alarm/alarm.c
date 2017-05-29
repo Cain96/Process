@@ -1,22 +1,38 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #define BUFSIZE 256
 #define TIMEOUT 10
 
 void myalarm(int sec) {
+  static int pid;
 
-  if ((pid=fork())== -1) {
+  struct sigaction sa;
+  sa.sa_handler = SIG_IGN;
+  sa.sa_flags = SA_NOCLDWAIT;
+  if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+    exit(1);
+  }
+
+  if(pid != 0){
+    kill(pid, SIGTERM);
+  }
+
+  if ((pid=fork()) == -1) {
     perror("fork failed.");
     exit(1);
   }
   if (pid == 0) { /* Child process */
     sleep(sec);
-    if (kill(ppid,SIGALRM) == -1) {
+    if (kill(getppid(),SIGALRM) == -1) {
       perror("kill failed.");
       exit(1);
     }
     exit(0);
+  } else {
+    return;
   }
 }
 
