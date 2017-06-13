@@ -13,7 +13,7 @@
 #define STRLEN 128
 #define TIMEOUT 10
 
-volatile sig_atomic_t eflag = 0;
+int sock;
 
 void myalarm(int sec) {
   static int pid;
@@ -45,22 +45,17 @@ void myalarm(int sec) {
   }
 }
 
-void timeout(int sock)
+void timeout()
 {
-  printf("This program is timeout.\n");
-  printf("closed\n");
+  char msg[] = "This program is timeout.\nclosed\n";
+  write(1, msg, sizeof(msg));
   close(sock);
   exit(0);
-}
-
-void handler(int signum) {
-  eflag = 1;
 }
 
 int main(int argc, char *argv[]) {
     char text[STRLEN];
     char *rtext;
-    int sock;
     struct sockaddr_in svr;
     int reuse;
     struct hostent *host;
@@ -78,7 +73,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if(signal(SIGALRM,handler) == SIG_ERR) {
+    if(signal(SIGALRM,timeout) == SIG_ERR) {
       perror("signal failed.");
       exit(1);
     }
@@ -117,9 +112,6 @@ int main(int argc, char *argv[]) {
     while(1){
                 /* 入力を監視するファイル記述子の集合を変数 rfds に
 セットする */
-        if(eflag){
-          timeout(sock);
-        }
   	    FD_ZERO(&rfds); /* rfds を空集合に初期化 */
         FD_SET(0,&rfds); /* 標準入力 */
         FD_SET(sock,&rfds); /* クライアントを受け付けたソケット */
