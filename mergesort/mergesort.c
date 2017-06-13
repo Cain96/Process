@@ -61,16 +61,12 @@ int main()
 
 void mergeSort(int numbers[], int temp[], int array_size)
 {
-  int fd1[2], fd2[2];
-  int pid, status;
+  int fd[2];
+  int pid, status, i;
   int mid = array_size / 2;
+  int temp_numbers[array_size];
 
-  if (pipe(fd1) == -1) {
-    perror("pipe failed.");
-    exit(1);
-  }
-
-  if (pipe(fd2) == -1) {
+  if (pipe(fd) == -1) {
     perror("pipe failed.");
     exit(1);
   }
@@ -79,24 +75,10 @@ void mergeSort(int numbers[], int temp[], int array_size)
     perror("fork failed.");
     exit(1);
   }
-  if (pid == 0) { /* Child process1 */
-    close(fd1[0]);
+  if (pid == 0) { /* Child process */
+    close(fd[0]);
     m_sort(numbers, temp, 0, mid - 1);
-    if (write(fd1[1], numbers, sizeof(int)*array_size) == -1) {
-      perror("pipe write.");
-      exit(1);
-    }
-    exit(0);
-  }
-
-  if ((pid=fork())== -1) {
-    perror("fork failed.");
-    exit(1);
-  }
-  if (pid == 0) { /* Child process2 */
-    close(fd2[0]);
-    m_sort(numbers, temp, mid, array_size - 1);
-    if (write(fd2[1], numbers, sizeof(int)*array_size) == -1) {
+    if (write(fd[1], numbers, sizeof(int)*array_size) == -1) {
       perror("pipe write.");
       exit(1);
     }
@@ -104,25 +86,19 @@ void mergeSort(int numbers[], int temp[], int array_size)
   }
 
   /* Parent process */
+  m_sort(numbers, temp, mid, array_size -1);
+  
   /* wait the end of Child Process  */
   wait(&status);
-  wait(&status);
 
-  /* From Child process1 */
-  close(fd1[1]);
-  if (read(fd1[0], numbers, sizeof(int)*NUM_ITEMS) == -1) {
+  /* From Child process */
+  close(fd[1]);
+  if (read(fd[0], temp_numbers, sizeof(int)*NUM_ITEMS) == -1) {
     perror("pipe read.");
     exit(1);
   }
 
-  /* From Child process2 */
-  int temp_numbers[array_size];
-  close(fd2[1]);
-  if (read(fd2[0], temp_numbers, sizeof(int)*NUM_ITEMS) == -1) {
-    perror("pipe read.");
-    exit(1);
-  }
-  for (int i = mid; i < array_size; i++) {
+  for (i = 0; i < mid; i++) {
     numbers[i] = temp_numbers[i];
   }
 
